@@ -1,0 +1,139 @@
+module("extensions.Collection",  package.seeall)
+extension = sgs.Package("Collection")
+
+
+
+
+
+--CtS001武动乾坤·张苞
+CtS001_ZhangBao = sgs.General(extension, "CtS001_ZhangBao", "shu", 4, true, false, false)
+
+
+    --<罴貅>
+Collection_PiXiu = sgs.CreateTargetModSkill{
+    name = "Collection_PiXiu", 
+	pattern = "Slash", 
+	residue_func = function(self, player)
+		if player:hasSkill(self:objectName()) then
+			return 1
+		end
+	end
+}
+
+CtS001_ZhangBao:addSkill(Collection_PiXiu)
+
+
+    --<追寇>
+Collection_ZhuiKou = sgs.CreateViewAsSkill{
+    name = "Collection_ZhuiKou", 
+	n = 1, 
+	view_filter = function(self, selected, to_select)
+	    return not to_select:isEquipped()
+	end, 
+	view_as = function(self, cards)
+	    if #cards == 1 then
+		    local card = cards[1]
+		    local acard = sgs.Sanguosha:cloneCard("slash", card:getSuit(), card:getNumber())
+            acard:addSubcard(card:getId())
+            acard:setSkillName(self:objectName())
+            return acard
+		end
+	end,
+	enabled_at_play = function(self, player)
+	    return player:getHandcardNum() == 1 and sgs.Slash_IsAvailable(player)
+	end, 
+	enabled_at_response = function(self, player, pattern)
+        return player:getHandcardNum() == 1 and pattern == "slash"
+	end
+}
+
+CtS001_ZhangBao:addSkill(Collection_ZhuiKou)
+
+
+
+--CtQ001刘璋(G.QUN025)
+CtQ001_LiuZhang = sgs.General(extension, "CtQ001_LiuZhang", "qun", 4, true, false, false)
+
+
+    --<闭隘>
+Collection_BiAi = sgs.CreateTriggerSkill{
+    name = "Collection_BiAi", 
+	frequency = sgs.Skill_NotFrequent, 
+	events = {sgs.EventPhaseStart}, 
+	on_trigger = function(self, event, player, data)
+		if player:getPhase() == sgs.Player_Start then
+		    local room = player:getRoom()
+	        local BiAi_Choice = room:askForChoice(player, self:objectName(), "BiAi_Choice_None+BiAi_Choice_MaxCards+BiAi_Choice_Distance+BiAi_Choice_Both")
+		    if BiAi_Choice == "BiAi_Choice_MaxCards" or BiAi_Choice == "BiAi_Choice_Both" then
+		        room:setPlayerFlag(player, "BiAi_MaxCards")
+			    player:drawCards(1, self:objectName())
+		    end
+		    if BiAi_Choice == "BiAi_Choice_Distance" or BiAi_Choice == "BiAi_Choice_Both" then
+		        room:setPlayerFlag(player, "BiAi_Distance")
+			    player:drawCards(1, self:objectName())
+			end
+		end
+	end
+}
+Collection_BiAi_MaxCards = sgs.CreateMaxCardsSkill{
+	name = "#Collection_BiAi_MaxCards", 
+	extra_func = function(self, target) 
+		if target:hasSkill(self:objectName()) and target:hasFlag("BiAi_MaxCards") then
+		    return -1
+		end
+	end
+}
+Collection_BiAi_Distance = sgs.CreateDistanceSkill{
+	name = "#Collection_BiAi_Distance",
+	correct_func = function(self, from, to)
+		if from:hasSkill(self:objectName()) and from:hasFlag("BiAi_Distance") then
+		    return 1
+		end
+	end
+}
+
+CtQ001_LiuZhang:addSkill(Collection_BiAi)
+CtQ001_LiuZhang:addSkill(Collection_BiAi_MaxCards)
+CtQ001_LiuZhang:addSkill(Collection_BiAi_Distance)
+
+
+
+
+
+sgs.LoadTranslationTable{
+    ["Collection"] = "优秀设计收集", 
+    
+	
+	
+	["CtS001_ZhangBao"] = "张苞", 
+	["#CtS001_ZhangBao"] = "武动乾坤", 
+	["designer:CtS001_ZhangBao"] = "文会斌", 
+    ["cv:CtS001_ZhangBao"] = "暂无", 
+    ["illustrator:CtS001_ZhangBao"] = "唐门世界", 
+	
+	
+	["Collection_PiXiu"] = "罴貅", 
+	[":Collection_PiXiu"] = "出牌阶段，你可以额外使用一张【杀】。", 
+	
+	["Collection_ZhuiKou"] = "追寇", 
+	[":Collection_ZhuiKou"] = "你可以将最后一张手牌当做【杀】使用或打出。", 
+	
+	
+	
+	["CtQ001_LiuZhang"] = "刘璋", 
+	["#CtQ001_LiuZhang"] = "昏庸暗弱", 
+	["designer:CtQ001_LiuZhang"] = "索拉", 
+    ["cv:CtQ001_LiuZhang"] = "暂无", 
+    ["illustrator:CtQ001_LiuZhang"] = "魔鬼鱼", 
+    
+	
+	["Collection_BiAi"] = "闭隘", 
+	[":Collection_BiAi"] = "准备阶段开始时，你可以选择一至两项：\
+	    1.你的手牌上限-1，直到回合结束；\
+	    2.你计算与其他角色的距离+1，直到回合结束。\
+	    每选择一项，你摸一张牌。", 
+	["BiAi_Choice_None"] = "不发动“闭隘”", 
+	["BiAi_Choice_MaxCards"] = "你的手牌上限-1，直到回合结束，然后你摸一张牌", 
+	["BiAi_Choice_Distance"] = "你计算与其他角色的距离+1，直到回合结束，然后你摸一张牌", 
+	["BiAi_Choice_Both"] = "同时选择两项，然后你摸两张牌"
+}
